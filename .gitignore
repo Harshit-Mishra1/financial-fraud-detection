@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Secrets
+.env
+.env.*
+
+# Local data and generated models
+data/*
+!data/.gitkeep
+models/*
+!models/.gitkeep
+
+# Generated outputs
+outputs/
+*.log
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
