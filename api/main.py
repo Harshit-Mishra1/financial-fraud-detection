@@ -6,10 +6,12 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any
 
+import joblib
 import mlflow.lightgbm
 import numpy as np
 import shap
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
 
 from api.db import init_db, log_prediction
 from api.schemas import (
@@ -60,9 +62,16 @@ async def lifespan(app: FastAPI):
 
     if os.getenv("SKIP_MODEL_LOAD", "false").lower() != "true":
         try:
-            mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
-            model_uri = os.getenv("MODEL_URI", "models:/fraud-lightgbm/latest")
-            model = mlflow.lightgbm.load_model(model_uri)
+            local_path = os.getenv("LOCAL_MODEL_PATH")
+            if local_path and os.path.exists(local_path):
+                model = joblib.load(local_path)
+            else:
+                mlflow.set_tracking_uri(
+                    os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+                )
+                model_uri = os.getenv("MODEL_URI", "models:/fraud-lightgbm/latest")
+                model = mlflow.lightgbm.load_model(model_uri)
+
             state["model"] = model
             state["explainer"] = shap.TreeExplainer(model)
             state["feature_names"] = list(getattr(model, "feature_name_", []))
@@ -78,6 +87,11 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")

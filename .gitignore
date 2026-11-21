@@ -31,3 +31,5 @@ outputs/
 Thumbs.db
 
 mlflow.db
+
+!models/fraud_lgbm.joblib
