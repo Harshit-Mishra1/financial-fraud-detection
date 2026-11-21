@@ -1,5 +1,8 @@
 # Real-Time Financial Fraud Scoring Engine
+[![CI](https://github.com/Harshit-Mishra1/financial-fraud-detection/actions/workflows/ci.yml/badge.svg)](https://github.com/Harshit-Mishra1/financial-fraud-detection/actions/workflows/ci.yml)
+[![Live API](https://img.shields.io/badge/Live%20API-Swagger%20UI-009688?logo=fastapi)](https://financial-fraud-detection-7kik.onrender.com/docs)
 
+> **Live Demo:** [https://financial-fraud-detection-7kik.onrender.com/docs](https://financial-fraud-detection-7kik.onrender.com/docs) *(Render free tier — allow ~30s for cold start)*
 An end-to-end, containerized machine learning backend for scoring financial transactions in real time using **LightGBM**, **SHAP** explainability, **MLflow** model registry, **FastAPI**, and **PostgreSQL** audit logging.
 
 ## Architecture
