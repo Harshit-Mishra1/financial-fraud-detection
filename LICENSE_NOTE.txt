@@ -1,3 +1,0 @@
-No license has been selected for this project scaffold.
-Before publishing, choose an appropriate license if you want to specify reuse terms.
-Check dataset licenses separately; a code license does not automatically license datasets.

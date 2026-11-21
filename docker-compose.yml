@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fraud_user
+      POSTGRES_PASSWORD: fraud_password
+      POSTGRES_DB: fraud_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fraud_user -d fraud_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://fraud_user:fraud_password@postgres:5432/fraud_db
+      --artifacts-destination /mlartifacts
+      --serve-artifacts
+      --host 0.0.0.0
+      --port 5000
+      --allowed-hosts "*"
+    volumes:
+      - mlflow_artifacts:/mlartifacts
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://fraud_user:fraud_password@postgres:5432/fraud_db
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MODEL_URI: models:/fraud-lightgbm/latest
+    ports:
+      - "8000:8000"
+
+volumes:
+  pg_data:
+  mlflow_artifacts:

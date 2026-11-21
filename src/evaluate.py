@@ -1,28 +1,39 @@
-"""Evaluation helpers. Call these after fitting a model."""
+"""Evaluation and threshold-optimization utilities for imbalanced fraud detection."""
 
+import numpy as np
 from sklearn.metrics import (
     average_precision_score,
-    classification_report,
     confusion_matrix,
+    f1_score,
+    precision_recall_curve,
     precision_score,
     recall_score,
+    roc_auc_score,
 )
 
 
-def evaluate_predictions(y_true, y_pred, y_score=None) -> dict:
-    """Return common classification metrics.
+def find_optimal_threshold(y_true, y_probs) -> tuple[float, float]:
+    """Select the probability threshold that maximizes F1 score on the validation split."""
+    precisions, recalls, thresholds = precision_recall_curve(y_true, y_probs)
+    f1_scores = 2 * (precisions * recalls) / (precisions + recalls + 1e-9)
+    best_idx = int(np.argmax(f1_scores[:-1]))
+    return float(thresholds[best_idx]), float(f1_scores[best_idx])
 
-    y_pred should be predicted class labels; y_score should be fraud probabilities
-    or decision scores for the positive (fraud) class.
-    """
-    result = {
-        "precision": precision_score(y_true, y_pred, zero_division=0),
-        "recall": recall_score(y_true, y_pred, zero_division=0),
-        "confusion_matrix": confusion_matrix(y_true, y_pred).tolist(),
-        "classification_report": classification_report(
-            y_true, y_pred, zero_division=0, output_dict=True
-        ),
+
+def evaluate_predictions(y_true, y_probs, threshold: float = 0.5) -> dict:
+    """Compute fraud-relevant classification metrics at a specified decision threshold."""
+    y_pred = (np.asarray(y_probs) >= threshold).astype(int)
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+
+    return {
+        "pr_auc": float(average_precision_score(y_true, y_probs)),
+        "roc_auc": float(roc_auc_score(y_true, y_probs)),
+        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
+        "recall": float(recall_score(y_true, y_pred, zero_division=0)),
+        "f1": float(f1_score(y_true, y_pred, zero_division=0)),
+        "threshold": float(threshold),
+        "tn": int(tn),
+        "fp": int(fp),
+        "fn": int(fn),
+        "tp": int(tp),
     }
-    if y_score is not None:
-        result["pr_auc_average_precision"] = average_precision_score(y_true, y_score)
-    return result

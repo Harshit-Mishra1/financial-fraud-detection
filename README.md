@@ -1,44 +1,44 @@
-# Financial Fraud Detection
+# Real-Time Financial Fraud Scoring Engine
 
-An educational end-to-end machine learning project for detecting potentially fraudulent financial transactions.
+An end-to-end, containerized machine learning backend for scoring financial transactions in real time using **LightGBM**, **SHAP** explainability, **MLflow** model registry, **FastAPI**, and **PostgreSQL** audit logging.
 
-## Planned features
-- Exploratory data analysis (EDA)
-- Class-imbalance handling
-- Traditional ML models and a PyTorch neural network
-- Evaluation with precision, recall, F1-score, PR-AUC, and confusion matrices
-- Decision-threshold tuning
-- Model explainability with SHAP
-- Optional Streamlit dashboard
+## Architecture
+- **Training & Experiment Tracking (`src/train.py`):** Stratified train/validation/test split, class-imbalance weighting (`scale_pos_weight`), validation-only F1 threshold optimization, and automatic model registration to MLflow.
+- **Real-Time Inference API (`api/main.py`):** FastAPI service with `lifespan` model + SHAP `TreeExplainer` loading, Pydantic v2 schema validation, `/health`, `/score`, and `/batch-score` endpoints.
+- **Audit Persistence (`api/db.py`):** Logs transaction IDs, fraud probabilities, risk tiers, decisions, and inference latency to PostgreSQL (`prediction_logs`).
+- **CI & Containerization:** Split `requirements-train.txt` / `requirements-serve.txt`, Docker Compose stack (`postgres`, `mlflow`, `api`), and GitHub Actions (`ruff` + `pytest`).
 
-## Project status
-Starter scaffold only. Dataset, trained models, and verified evaluation results have not been included yet.
+## Quick Start (Windows / VS Code)
 
-## Folder structure
-- `data/`: local datasets (not committed to Git)
-- `notebooks/`: Jupyter notebooks
-- `src/`: data loading, training, evaluation utilities
-- `models/`: locally saved model files (not committed to Git)
-- `app/`: Streamlit demo
-- `tests/`: starter tests
-
-## Setup (Windows)
-1. Install Python 3.10 or newer.
-2. Open this folder in VS Code.
-3. Create a virtual environment:
+1. **Place Dataset:** Download a binary fraud dataset (e.g., Kaggle Credit Card Fraud `creditcard.csv`) into `data/raw/creditcard.csv`.
+2. **Start PostgreSQL & MLflow:**
+   ```powershell
+   docker compose up -d --build postgres mlflow
+   ```
+   Verify the MLflow UI at `http://localhost:5000`.
+3. **Train & Register Model:**
    ```powershell
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
+   pip install -r requirements-train.txt
+   python -m src.train
    ```
-4. Install dependencies:
+4. **Launch FastAPI Scoring Container:**
    ```powershell
-   python -m pip install --upgrade pip
-   pip install -r requirements.txt
+   docker compose up -d --build api
    ```
-5. Start with `notebooks/01_eda.ipynb` (create your notebook there) or the scripts in `src/`.
+   Open interactive Swagger docs at `http://localhost:8000/docs`.
 
-## Dataset
-This ZIP intentionally does not include a transaction dataset. Use a reputable public dataset and read its license/terms before using it. Place your local CSV file in `data/` and do not commit sensitive or private transaction data.
+## API Example
 
-## Disclaimer
-Educational project only; not suitable for real-world financial decisions or production fraud detection without extensive validation, security, privacy, and compliance work.
+```bash
+curl -X POST "http://localhost:8000/score" \
+  -H "Content-Type: application/json" \
+  -d '{"transaction_id": "txn_1001", "features": [0.0, -1.35, 1.19, 0.26, 0.16, 0.46, 0.23, 0.09, 0.36, 0.09, -0.55, -0.61, -0.99, -0.31, 1.46, -0.47, 0.20, 0.02, 0.40, 0.25, -0.01, 0.27, -0.11, 0.06, 0.12, -0.18, 0.13, -0.02, 149.62, 0.0]}'
+```
+
+## Running Tests
+
+```powershell
+pytest -v
+```

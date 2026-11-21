@@ -17,6 +17,10 @@ data/*
 models/*
 !models/.gitkeep
 
+# MLflow local artifacts
+mlruns/
+mlartifacts/
+
 # Generated outputs
 outputs/
 *.log
@@ -25,3 +29,5 @@ outputs/
 .vscode/
 .DS_Store
 Thumbs.db
+
+mlflow.db
